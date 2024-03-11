@@ -1,0 +1,46 @@
+using Approvals.Common.ConfigurationHelper;
+
+namespace Approvals.Middleware
+{
+    public class AddSecureHeaderMiddleware 
+    {
+        private readonly RequestDelegate _next;
+
+        public AddSecureHeaderMiddleware(RequestDelegate next)
+        {
+            _next = next;
+        }
+        public async Task Invoke(HttpContext context)
+        {
+            //The OnStarting method allows you to register a callback function
+            //that will be executed just before the HTTP response headers are sent to the client.
+            context.Response.OnStarting(state =>
+            {
+
+                // Add Referrer-Policy header to control referrer information leakage
+                context.Response.Headers.Add("Referrer-Policy", "origin");
+
+                // Set Permissions Policy to restrict browser features for enhanced security
+                context.Response.Headers.Add("Permissions-Policy",
+                    "geolocation=(), midi=(), camera=(),usb=(), magnetometer=(), sync-xhr=(), microphone=(), camera=(), gyroscope=(), speaker=(), payment=()");
+
+                // Add X-Content-Type-Options header to prevent MIME sniffing attacks
+                context.Response.Headers.Add("X-Content-Type-Options", "nosniff");
+
+                // Set Cache-Control header to prevent caching sensitive data
+                context.Response.Headers.Add("Cache-Control", "no-store");
+
+                // Set Pragma header to ensure no caching at all
+                context.Response.Headers.Add("Pragma", "no-cache");
+
+                // Add Strict-Transport-Security header to enforce HTTPS for improved security
+                context.Response.Headers.Add("Strict-Transport-Security", "max-age=7776000; includeSubdomains");
+
+                return Task.CompletedTask;
+            }, null
+            );
+
+            await _next(context);
+        }
+    }
+}
